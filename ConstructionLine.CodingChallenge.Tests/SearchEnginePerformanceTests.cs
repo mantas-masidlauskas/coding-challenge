@@ -6,7 +6,6 @@ using NUnit.Framework;
 
 namespace ConstructionLine.CodingChallenge.Tests
 {
-    [TestFixture]
     public class SearchEnginePerformanceTests : SearchEngineTestsBase
     {
         private List<Shirt> _shirts;
@@ -23,9 +22,8 @@ namespace ConstructionLine.CodingChallenge.Tests
             _searchEngine = new SearchEngine(_shirts);
         }
 
-
-        [Test]
-        public void PerformanceTest()
+        [TestCase(100)]
+        public void Search_WhenSingleColorOptionProvided_ShouldNotTakeLongerThanExpected(int maxDurationInMilliseconds)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -43,6 +41,32 @@ namespace ConstructionLine.CodingChallenge.Tests
             AssertResults(results.Shirts, options);
             AssertSizeCounts(_shirts, options, results.SizeCounts);
             AssertColorCounts(_shirts, options, results.ColorCounts);
+
+            Assert.IsTrue(sw.ElapsedMilliseconds < maxDurationInMilliseconds, $"Expected Duration should be less than {maxDurationInMilliseconds}ms, but elapsed {sw.ElapsedMilliseconds}ms.");
+        }
+
+        [TestCase(100)]
+        public void Search_WhenMultiColorMultiSizeOptionProvided_ShouldNotTakeLongerThanExpected(int maxDurationInMilliseconds)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var options = new SearchOptions
+            {
+                Colors = Color.All,
+                Sizes = Size.All
+            };
+
+            var results = _searchEngine.Search(options);
+
+            sw.Stop();
+            Console.WriteLine($"Test fixture finished in {sw.ElapsedMilliseconds} milliseconds");
+
+            AssertResults(results.Shirts, options);
+            AssertSizeCounts(_shirts, options, results.SizeCounts);
+            AssertColorCounts(_shirts, options, results.ColorCounts);
+
+            Assert.IsTrue(sw.ElapsedMilliseconds < maxDurationInMilliseconds, $"Expected Duration should be less than {maxDurationInMilliseconds}ms, but elapsed {sw.ElapsedMilliseconds}ms.");
         }
     }
 }
