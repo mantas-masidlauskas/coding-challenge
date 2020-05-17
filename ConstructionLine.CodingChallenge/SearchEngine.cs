@@ -6,12 +6,18 @@ namespace ConstructionLine.CodingChallenge
 {
     public class SearchEngine
     {
-        private readonly List<Shirt> _shirts;
+        private readonly IReadOnlyList<Shirt> _shirts;
+        private readonly IReadOnlyDictionary<Guid, Shirt> _shirtsByGuid;
+        private readonly IReadOnlyDictionary<Guid, HashSet<Guid>> _shirtsByColor;
+        private readonly IReadOnlyDictionary<Guid, HashSet<Guid>> _shirtsBySize;
 
         public SearchEngine(List<Shirt> shirts)
         {
-            // TODO: data preparation and initialisation of additional data structures to improve performance goes here.
+            // data preparation and initialisation of additional data structures to improve performance goes here.
             _shirts = shirts ?? throw new ArgumentNullException(nameof(shirts));
+            _shirtsByGuid = _shirts.ToDictionary(s => s.Id, s => s);
+            _shirtsByColor = _shirts.GroupBy(s => s.Color.Id).ToDictionary(s => s.Key, s => s.Select(s => s.Id).ToHashSet());
+            _shirtsBySize = _shirts.GroupBy(s => s.Size.Id).ToDictionary(s => s.Key, s => s.Select(s => s.Id).ToHashSet());
         }
 
         public SearchResults Search(SearchOptions options)
@@ -19,17 +25,44 @@ namespace ConstructionLine.CodingChallenge
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
 
-            // TODO: search logic goes here.
+            var coloredShirts = Search(_shirtsByColor, options.Colors.Select(s => s.Id).ToHashSet());
+            var sizedShirts = Search(_shirtsBySize, options.Sizes.Select(s => s.Id).ToHashSet());
 
-            var colorCounts = GetColorCount(_shirts);
-            var sizeCounts = GetSizeCount(_shirts);
+            var matchedShirts = coloredShirts
+                .Intersect(sizedShirts)
+                .Select(ms => _shirtsByGuid[ms])
+                .ToList();
+
+            var colorCounts = GetColorCount(matchedShirts);
+            var sizeCounts = GetSizeCount(matchedShirts);
 
             return new SearchResults
             {
-                Shirts = _shirts,
+                Shirts = matchedShirts,
                 ColorCounts = colorCounts,
                 SizeCounts = sizeCounts
             };
+        }
+
+        private static HashSet<Guid> Search(IReadOnlyDictionary<Guid, HashSet<Guid>> shirtsBy, HashSet<Guid> lookupValues)
+        {
+            if (!lookupValues.Any())
+            {
+                return shirtsBy
+                    .SelectMany(s => s.Value)
+                    .ToHashSet();
+            }
+
+            var result = new HashSet<Guid>();
+            foreach (var lookupValue in lookupValues)
+            {
+                if (shirtsBy.TryGetValue(lookupValue, out var foundShirtsBy))
+                {
+                    result.UnionWith(foundShirtsBy);
+                }
+            }
+
+            return result;
         }
 
         private static List<SizeCount> GetSizeCount(List<Shirt> matchedShirts)

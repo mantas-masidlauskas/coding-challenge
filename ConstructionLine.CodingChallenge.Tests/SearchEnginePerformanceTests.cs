@@ -6,7 +6,6 @@ using NUnit.Framework;
 
 namespace ConstructionLine.CodingChallenge.Tests
 {
-    [TestFixture]
     public class SearchEnginePerformanceTests : SearchEngineTestsBase
     {
         private List<Shirt> _shirts;
@@ -25,7 +24,7 @@ namespace ConstructionLine.CodingChallenge.Tests
 
 
         [Test]
-        public void PerformanceTest()
+        public void Search_WhenSingleColorOptionProvided_ShouldNotTakeLongerThanExpected()
         {
             var sw = new Stopwatch();
             sw.Start();
